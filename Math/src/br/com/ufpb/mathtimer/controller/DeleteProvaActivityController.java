@@ -26,7 +26,7 @@ public class DeleteProvaActivityController {
 		idsETitulos = ProvasDAO.getIdETituloDasProvas(activity);
 		if (idsETitulos.size() == 0) {
 			Toast.makeText(activity.getApplicationContext(),
-					"N„o h· provas cadastradas!", 2).show();
+					"N√£o h√° provas cadastradas!", 2).show();
 		}
 		String[] arrayDeTitulos = (String[]) idsETitulos.keySet().toArray(
 				new String[0]);
@@ -39,6 +39,8 @@ public class DeleteProvaActivityController {
 	public void btDeletarCodigo(String itemvalue) {
 		int idSelecionado = idsETitulos.get(itemvalue);
 		ProvasDAO.deletarProva(fachada.getActivity(), idSelecionado);
+		Toast.makeText(fachada.getActivity(),
+				"Prova deletada com sucesso", Toast.LENGTH_SHORT).show();
 		fachada.setIdProvaAtual(0);
 		fachada.setJogoSalvo(false);
 	}
