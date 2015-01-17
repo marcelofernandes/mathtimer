@@ -1,11 +1,26 @@
 package br.com.ufpb.mathtimer.view;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Set;
 
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpResponse;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.ByteArrayEntity;
+import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.params.BasicHttpParams;
+import org.apache.http.params.HttpConnectionParams;
+import org.apache.http.params.HttpParams;
+import org.apache.http.util.EntityUtils;
+
 import android.app.Activity;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.AdapterView;
@@ -16,6 +31,7 @@ import android.widget.ListView;
 import android.widget.Toast;
 import br.com.ufpb.mathtimer.controller.ActivityController;
 import br.com.ufpb.mathtimer.model.Fachada;
+import br.com.ufpb.mathtimer.model.Prova;
 import br.com.ufpb.mathtimer.model.ProvasDAO;
 
 public class LoadProvaActivity extends Activity {
@@ -26,6 +42,16 @@ public class LoadProvaActivity extends Activity {
 	private HashMap<String, Integer> idsETitulos;
 	private List<Integer> ids = new ArrayList<Integer>();
 	private ListView listaDeViews;
+	
+	private static final String URLgetID = "http://mathtimer-proext.rhcloud.com/checkprova";
+	private static final String URLbaixarProva = "http://mathtimer-proext.rhcloud.com/baixarprova";
+	private int tempoDeEspera = 60000;
+	private byte[] dataGeiID;
+	private byte[] dataBaixarProva;
+	private HashMap<String,Integer> dataFromServlet = new HashMap<String,Integer>();
+	private Prova provaBaixada;
+	private Integer idProva;	
+	private boolean baixouComSucesso;
 
 	@Override
 	public void onCreate(Bundle icicle) {
@@ -34,6 +60,8 @@ public class LoadProvaActivity extends Activity {
 		 listaDeViews = (ListView) findViewById(R.id.listView1);
 		 this.fachada = Fachada.getInstance();
 		 fachada.setActivity(this);
+		 idProva = 0;
+		 baixouComSucesso = false;
 		 btVoltar = (Button) findViewById(R.id.button2);
 		 btSair = (Button) findViewById(R.id.button3);
 		 atualizarLista();
@@ -56,21 +84,39 @@ public class LoadProvaActivity extends Activity {
 	public void atualizarLista(){
 		ids  = new ArrayList<Integer>();
 		ids.addAll(ProvasDAO.getIdETituloDasProvas(this).values());
-	    new GetIdFromServlet().execute(LoadProvaActivity.this, ids);
-
+		
+		if(baixouComSucesso){
+			Toast.makeText(this,
+					"Prova baixada com sucesso", Toast.LENGTH_LONG).show();
+			baixouComSucesso = false;
+		}
+			
+		Toast.makeText(this,
+				"Atualizando a lista de provas", Toast.LENGTH_LONG).show();
+		new GetIdAsyncTask().execute(URLgetID);
 	}
 
-	public void mostarProvas(HashMap<String, Integer> dataFromServlet) {
+	public void mostarProvas() {
 		if(dataFromServlet.size() == 0){
 			Toast.makeText(this,
-			                 "No momento n„o h· provas a serem baixadas!",
+			                 "No momento n√£o h√° provas a serem baixadas!",
 			                 Toast.LENGTH_LONG).show();
+		}else{
+			Toast.makeText(this,
+	                 "Clique na prova para baix√°-la!",
+	                 Toast.LENGTH_LONG).show();
 		}
 		
 		idsETitulos = new HashMap<String, Integer>();
 		idsETitulos.putAll(dataFromServlet);
-
-		String[] arrayDeTitulos = (String[]) idsETitulos.keySet().toArray(new String[0]);
+		
+		Set <String> myset= idsETitulos.keySet();
+		myset.remove(null);
+		String[] arrayDeTitulos = new String[myset.size()];
+		int i =0;
+		for(String s: myset){	
+			arrayDeTitulos[i++] = "" + s;
+		}
 
 		ArrayAdapter<String> adapter = new ArrayAdapter<String>(this,
 				android.R.layout.simple_list_item_1, android.R.id.text1,
@@ -81,13 +127,108 @@ public class LoadProvaActivity extends Activity {
 			public void onItemClick(AdapterView<?> parent, View view,
 					int position, long id) {
 				String itemvalue = (String) listaDeViews.getItemAtPosition(position);
-				int idSelecionado = idsETitulos.get(itemvalue);
-			    new GetDataFromWebService().execute(LoadProvaActivity.this, idSelecionado);
+				idProva = idsETitulos.get(itemvalue);
+				new DownloadProvaAsyncTask().execute(URLbaixarProva);
 			    //atualizarLista();
 			}
 		});
 	}
+	
+	private class GetIdAsyncTask extends AsyncTask<String, String, String>{
+		@Override
+		protected String doInBackground(String... params) {
+			try {
+			    HttpParams param = new BasicHttpParams();
+			    HttpConnectionParams.setStaleCheckingEnabled(param, false);
+			    HttpConnectionParams.setConnectionTimeout(param, tempoDeEspera);
+			    HttpConnectionParams.setSoTimeout(param, tempoDeEspera);
+			    DefaultHttpClient httpClient = new DefaultHttpClient(param);
+			
+			    HttpPost postMethod = new HttpPost(params[0]);
+			
+			    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+			    ObjectOutputStream oos = new ObjectOutputStream(baos);
+			    oos.writeObject(ids);
+			    ByteArrayEntity req_entity = new ByteArrayEntity(baos.toByteArray());
+			    req_entity.setContentType("application/octet-stream");
+			
+			    postMethod.setEntity(req_entity);
+			    
+			    HttpResponse response = httpClient.execute(postMethod);
+			    HttpEntity resp_entity = response.getEntity();
+		        if (resp_entity != null) {
+		        	try {
+		        		dataGeiID = EntityUtils.toByteArray(resp_entity);
+		        		ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(dataGeiID));
+		        		dataFromServlet = (HashMap<String,Integer>) ois.readObject();
+		        		return null;
+			          }
+			          catch (Exception e) {
+			          }
+		        }
+			}
+			catch (Exception e) {
+			}
+			return null;
+		}
+ 
+		@Override
+		protected void onPostExecute(String result) {
+			mostarProvas();
+		}
+
+	}
+	
+	private class DownloadProvaAsyncTask extends AsyncTask<String, String, String>{
+		 
+		@Override
+		protected String doInBackground(String... params) {
+			try {
+			    HttpParams param = new BasicHttpParams();
+			    HttpConnectionParams.setStaleCheckingEnabled(param, false);
+			    HttpConnectionParams.setConnectionTimeout(param, tempoDeEspera);
+			    HttpConnectionParams.setSoTimeout(param, tempoDeEspera);
+			    DefaultHttpClient httpClient = new DefaultHttpClient(param);
+			
+			    HttpPost postMethod = new HttpPost(params[0]);
+			
+			    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+			    ObjectOutputStream oos = new ObjectOutputStream(baos);
+			    oos.writeObject(idProva);
+			    ByteArrayEntity req_entity = new ByteArrayEntity(baos.toByteArray());
+			    req_entity.setContentType("application/octet-stream");
+			
+			    postMethod.setEntity(req_entity);
+			    
+			    HttpResponse response = httpClient.execute(postMethod);
+			    HttpEntity resp_entity = response.getEntity();
+		        if (resp_entity != null) {
+		        	try {
+		        		dataBaixarProva = EntityUtils.toByteArray(resp_entity);
+		        		ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(dataBaixarProva));
+		        		provaBaixada = (Prova) ois.readObject();
+				        ProvasDAO.salvarProva(fachada.getActivity(), provaBaixada, idProva);
+				        baixouComSucesso = true;
+				        return null;
+			          }
+			          catch (Exception e) {
+			          }
+		        }
+			}
+			catch (Exception e) {
+			}
+			return null;
+		}
+ 
+		@Override
+		protected void onPostExecute(String result) {
+			atualizarLista();
+		}
+	}
 
 }
+
+
+
 
 
