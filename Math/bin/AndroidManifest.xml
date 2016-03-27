@@ -1,0 +1,73 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="br.com.ufpb.mathtimer.view"
+    android:versionCode="1"
+    android:versionName="1.0" >
+	<uses-permission android:name="android.permission.INTERNET"></uses-permission>
+    <uses-sdk
+        android:minSdkVersion="8"
+        android:targetSdkVersion="16" />
+
+    <application
+        android:label="@string/app_name"
+        android:icon="@drawable/logo"
+        android:theme="@style/AppTheme" 
+        android:name="MyApplication"
+        >
+        <activity
+            android:name="MainActivity" 
+             android:screenOrientation="landscape">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>   
+        <activity android:name="org.acra.CrashReportDialog"
+        android:theme="@style/Theme.Dialog"
+        android:process=":error_report"
+        android:launchMode="singleInstance"
+        android:excludeFromRecents="true"
+        android:finishOnTaskLaunch="true" />
+        <activity android:name="NomeJogadorActivity"
+             android:screenOrientation="landscape">
+            
+		</activity>
+		<activity android:name="JogoActivity"
+		     android:screenOrientation="landscape">
+            
+		</activity>
+		<activity android:name="RankingActivity"
+		     android:screenOrientation="landscape">
+            
+		</activity>
+		<activity android:name="InstrucoesActivity"
+		     android:screenOrientation="landscape">
+            
+		</activity>
+		<activity android:name="ZoomActivity"
+		     android:screenOrientation="landscape">
+            
+		</activity>
+		<activity android:name="SelecaoDeProvaActivity"
+		     android:screenOrientation="landscape">
+            
+		</activity>
+		<activity android:name="SelecaoDeRankingActivity"
+		     android:screenOrientation="landscape">
+            
+		</activity>
+		<activity android:name="ConfigActivity"
+		     android:screenOrientation="landscape">
+            
+		</activity>
+		<activity android:name="LoadProvaActivity"
+		     android:screenOrientation="landscape">
+            
+		</activity>
+		<activity android:name="DeleteProvaActivity"
+		     android:screenOrientation="landscape">
+            
+		</activity>
+    </application>
+
+</manifest>

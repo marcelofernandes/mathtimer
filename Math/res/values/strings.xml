@@ -1,0 +1,10 @@
+<resources>
+
+    <string name="app_name">Math Timer</string>
+    <string name="menu_settings">Settings</string>
+	<string name="nameButton">Button</string>
+	<string name="crash_dialog_title">Ocorreu um erro inesperado</string>
+	<string name="crash_dialog_text">Ocorreu um erro inesperado forçando a parada da aplicação. Por favor, nos ajude a consertar isto nos enviando os dados do erro,
+	    tudo que você tem que fazer é clicar em OK para nos enviar o email. Obrigado!</string>
+	<string name="crash_dialog_comment_prompt">Você pode inserir um comentário abaixo, se desejar!</string>
+</resources>
